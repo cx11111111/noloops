@@ -9,7 +9,7 @@ x_ticks = list()
 tick_positions = list()
 
 
-def show_evaluation(net, dataset, scaler, debug=True):
+def show_evaluation(net, test_set, scaler, debug=True):
     ''' 评估 RNN 在测试集上的性能，并显示预测值和目标值.
     参数:
         net (nn.Module): RNN to evaluate
@@ -17,20 +17,16 @@ def show_evaluation(net, dataset, scaler, debug=True):
         scaler (MinMaxScaler): 反归一化
         debug (bool): should we calculate/display eval.MSE/MAE
     '''
-    dataset = torch.FloatTensor(dataset).unsqueeze(-1).to(device)
-    total_train_size = int(config.split_ratio1 * len(dataset))
-    test_set=dataset[total_train_size:]
-
     # 预测测试集
     net.eval()
-    test_predict = net(test_set)
+    test_predict = net(test_set['X'],test_set['Y'])
 
     # 对实际值和预测值反归一化
     test_predict = scaler.inverse_transform(test_predict.cpu().data.numpy())
-    test_set = scaler.inverse_transform(test_set.cpu().squeeze(-1).data.numpy())
+    test_set['Y'] = scaler.inverse_transform(test_set['Y'].cpu().squeeze(-1).data.numpy().reshape(-1,1))
 
     # 绘制原始序列与预测序列
-    plt.plot(test_set,label='real')
+    plt.plot(test_set['Y'],label='real')
     plt.plot(test_predict,label='predict')
     plt.ylabel("Patv")
     plt.title('Forecast and Real')
@@ -45,8 +41,8 @@ def show_evaluation(net, dataset, scaler, debug=True):
         #train_mse = (np.square(test_predict - dataset))[:total_train_size].mean()
         #train_mae = (np.abs(test_predict - dataset))[:total_train_size].mean()
         #计算测试集的MSE、MAE
-        test_mse = (np.square(test_predict - test_set)).mean()
-        test_mae = (np.abs(test_predict - test_set)).mean()
+        test_mse = (np.square(test_predict - test_set['Y'])).mean()
+        test_mae = (np.abs(test_predict - test_set['Y'])).mean()
 
         #print(f"Total MSE:  {total_mse:.4f}  |  Total MAE:  {total_mae:.4f}")
         #print(f"Train MSE:  {train_mse:.4f}  |  Train MAE:  {train_mae:.4f}")

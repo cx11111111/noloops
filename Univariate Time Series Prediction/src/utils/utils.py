@@ -20,7 +20,7 @@ def evaluate(net, valid_set, history):
     '''
     net.eval()
 
-    val_predict = net(valid_set['X'])
+    val_predict = net(valid_set['X'],valid_set['Y'])
     val_loss = loss_func(val_predict, valid_set['Y'])
     history['val_loss'].append(val_loss.item())
 
@@ -43,7 +43,7 @@ def train(net, train_loader, optimizer, history):
     train_loss = 0
     for input, target in train_loader:
         optimizer.zero_grad()
-        loss = loss_func(net(input), target)
+        loss = loss_func(net(input,target), target)
         loss.backward()
         optimizer.step()
 
@@ -123,7 +123,7 @@ def train_test_split(subsequences):
     return train_loader, valid_set, test_set
 
 
-def extract_subsequences(sequence, lag=3):
+def extract_subsequences(sequence, lag):
     ''' 划分输入数据和目标值
     参数:
         sequence(numpy.ndarray): 整个数据集
@@ -153,16 +153,18 @@ def load_dataset(dataset_path, show_data=True):
     '''
     # Load the dataset as DataFrame
     dataset = pd.read_csv(dataset_path)
+    columns = ["TurbID", "Patv"]
+    dataset = dataset[columns]
+    target_col = 'Patv'
+    dataset = dataset[dataset[target_col] != 0]
+    dataset = dataset[dataset[target_col] != -0.3]
+    # 处理异常值
+    dataset = dataset.dropna()
     #xlabels = dataset.iloc[:, 2].values
-    dataset = dataset.iloc[:, 12:].values
+    dataset = dataset.iloc[:, 1:].values
 
     if show_data:
         display_dataset(dataset)
-
-    #处理异常值
-    data=pd.DataFrame(dataset)
-    data = data.dropna()
-    dataset=data.values
 
     # 归一化
     scaler = MinMaxScaler()
